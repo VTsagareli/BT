@@ -1,0 +1,8 @@
+torch
+librosa
+pytube
+moviepy
+noisereduce
+pydub
+numpy
+scikit-learn
