@@ -62,6 +62,6 @@ if __name__ == "__main__":
     # Train the model
     model = train_model(X_train, y_train)
 
-    # Save the trained model
+    # Save the trained model's state_dict
     torch.save(model.state_dict(), "models/cnn_model.pth")
     print("Model trained and saved!")
