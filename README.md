@@ -1,6 +1,12 @@
 # BT
 Bachelor Thesis Project - AI Sound Anomaly Detection Model.
 
+Before running the model, one should go on to this link and doenload the normal audio dataset. After that, one should copy/paste about 1500 normal audio samples to the normal_audio folder. 
+
+Link to the normal audio dataset: https://www.kaggle.com/datasets/omkarmb/dataset-open-access-vehicle-interior-sound-dataset
+
+Then one can proceed with running the model
+
 Steps To Run the model:
 
 1. Run cleaning_and_sampling.py:
