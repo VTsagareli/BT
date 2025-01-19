@@ -1,5 +1,6 @@
 # BT
-Bachelor Thesis Project - AI Sound Anomaly Detection Model
+Bachelor Thesis Project - AI Sound Anomaly Detection Model.
+
 Steps To Run the model:
 
 1. Run cleaning_and_sampling.py:
