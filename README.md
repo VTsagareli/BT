@@ -139,8 +139,12 @@ Steps To Run the model:
     
     Plots the confusion matrix for better insights into model performance.
 
-Optional Step:
+Optional Steps:
+    
+    count_sample.py:
+
+    Counts the amount of samples at hand. Useful for knowing how many normal and broken audio samples there are after running the augmentaitons.
     
     clean_sample_folders.py:
 
-    cleans folders augmetned_broken_audio_samples, broken_audio_samples and normal_audio_samples for convenience.
+    cleans folders augmetned_broken_audio_samples, broken_audio_samples and normal_audio_samples for convenience. It will also clean normal_audio and broken_audio if confirmed; This is useful when I have to make commits, since its not convenient to have the audio data on git.
