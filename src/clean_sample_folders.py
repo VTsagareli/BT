@@ -4,7 +4,10 @@ import shutil
 # Directories to handle automatically
 DEFAULT_FOLDERS = [
     "data/broken_audio_samples",
-    "data/normal_audio_samples"
+    "data/normal_audio_samples",
+    "data/augmented_broken_audio_samples",
+    "data/processed_data",
+    "models"
 ]
 
 # Directories that require user confirmation
@@ -44,7 +47,7 @@ def main():
     print("\nRequesting confirmation for additional folders...")
     confirm_and_clean()
 
-    print("Operation completed.")
+    print("\nAll necessary folders have been cleaned and recreated successfully.")
 
 if __name__ == "__main__":
     main()

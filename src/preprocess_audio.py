@@ -15,23 +15,23 @@ N_MFCC = 40
 MAX_TIME_STEPS = 100
 
 # Augmentation Functions
-def add_noise(audio, noise_factor=0.005):
+def add_noise(audio, noise_factor=0.010):
     noise = np.random.normal(0, 1, len(audio))
     return audio + noise_factor * noise
 
 def reverse_audio(audio):
     return audio[::-1]
 
-def dynamic_range_compression(audio, threshold=0.5):
+def dynamic_range_compression(audio, threshold=0.8):
     return np.tanh(audio * threshold)
 
-def clip_audio(audio, clipping_factor=0.8):
+def clip_audio(audio, clipping_factor=0.95):
     return np.clip(audio, -clipping_factor, clipping_factor)
 
-def scale_amplitude(audio, factor=0.5):
+def scale_amplitude(audio, factor=0.8):
     return audio * factor
 
-def insert_silence(audio, sr, silence_duration=0.5):
+def insert_silence(audio, sr, silence_duration=0.7):
     silence = np.zeros(int(sr * silence_duration))
     return np.concatenate((silence, audio, silence))
 

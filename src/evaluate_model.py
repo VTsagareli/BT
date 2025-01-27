@@ -1,38 +1,81 @@
+import os
 import torch
 import numpy as np
-from sklearn.metrics import classification_report, confusion_matrix
+import joblib
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
-from train_model import CNN1DClassifier
+from train_cnn_model import CNN1DClassifier
 
-def evaluate_model(X_test, y_test):
-    # Load the trained model
-    model = CNN1DClassifier()
-    model.load_state_dict(torch.load("models/cnn_model.pth"))
-    model.eval()
+# Paths to the data and models
+DATA_PATH = "data/processed_data"
+MODEL_PATH = "models"
 
-    # Evaluate the model
-    with torch.no_grad():
-        output = model(X_test)
-        _, predicted = torch.max(output, 1)
+def evaluate_cnn_model(X_test, y_test):
+    """
+    Evaluate the trained CNN model using the correct test data.
+    """
+    try:
+        model_path = os.path.join(MODEL_PATH, "cnn_model.pth")
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"CNN model file '{model_path}' not found.")
 
-        # Calculate accuracy
-        accuracy = (predicted == y_test).float().mean()
-        print(f"Test Accuracy: {accuracy.item()}")
+        model = CNN1DClassifier()
+        model.load_state_dict(torch.load(model_path, weights_only=True))
+        model.eval()
 
-        # Generate detailed metrics
-        y_true = y_test.cpu().numpy()
-        y_pred = predicted.cpu().numpy()
+        with torch.no_grad():
+            output = model(X_test)
+            _, predicted = torch.max(output, 1)
 
-        print("\nClassification Report:")
-        print(classification_report(y_true, y_pred, target_names=["Normal", "Broken"]))
+            accuracy = (predicted == y_test).float().mean()
+            print(f"\nCNN Model Accuracy: {accuracy.item():.4f}")
 
-        # Confusion Matrix
-        cm = confusion_matrix(y_true, y_pred)
-        print("\nConfusion Matrix:")
-        print(cm)
+            y_true = y_test.cpu().numpy()
+            y_pred = predicted.cpu().numpy()
 
-        # Plot the confusion matrix
-        plot_confusion_matrix(cm, classes=["Normal", "Broken"])
+            print("\nCNN Classification Report:")
+            print(classification_report(y_true, y_pred, target_names=["Normal", "Broken"]))
+
+            cm = confusion_matrix(y_true, y_pred)
+            print("\nCNN Confusion Matrix:")
+            print(cm)
+            plot_confusion_matrix(cm, classes=["Normal", "Broken"], title="CNN Confusion Matrix")
+
+    except Exception as e:
+        print(f"Error evaluating CNN model: {e}")
+
+def evaluate_ml_models(X_test_flat, y_test):
+    """
+    Evaluate classic ML models using the flattened test data.
+    """
+    model_names = ["LogisticRegression", "SVM", "DecisionTree", "RandomForest", "GradientBoosting"]
+
+    print(f"Evaluating ML models with input shape: {X_test_flat.shape}")
+
+    for model_name in model_names:
+        model_path = os.path.join(MODEL_PATH, f"{model_name}.pkl")
+
+        if not os.path.exists(model_path):
+            print(f"Skipping {model_name}: Model file not found ({model_path})")
+            continue
+
+        try:
+            model = joblib.load(model_path)
+            y_pred = model.predict(X_test_flat)
+
+            accuracy = accuracy_score(y_test, y_pred)
+            print(f"\n{model_name} Accuracy: {accuracy:.4f}")
+
+            print(f"\n{model_name} Classification Report:")
+            print(classification_report(y_test, y_pred, target_names=["Normal", "Broken"]))
+
+            cm = confusion_matrix(y_test, y_pred)
+            print(f"\n{model_name} Confusion Matrix:")
+            print(cm)
+            plot_confusion_matrix(cm, classes=["Normal", "Broken"], title=f"{model_name} Confusion Matrix")
+
+        except Exception as e:
+            print(f"Error evaluating {model_name}: {e}")
 
 def plot_confusion_matrix(cm, classes, title="Confusion Matrix", cmap=plt.cm.Blues):
     """
@@ -61,13 +104,28 @@ def plot_confusion_matrix(cm, classes, title="Confusion Matrix", cmap=plt.cm.Blu
     plt.show()
 
 if __name__ == "__main__":
-    # Load test data
-    X_test = np.load("data/processed_data/X_test.npy")
-    y_test = np.load("data/processed_data/y_test.npy")
+    try:
+        print("Loading test data...")
 
-    # Convert data to PyTorch tensors
-    X_test = torch.FloatTensor(X_test)  # Shape: [batch_size, 40, sequence_length]
-    y_test = torch.LongTensor(y_test)
+        # Load CNN test data
+        X_test_cnn = np.load(os.path.join(DATA_PATH, "X_test.npy"))
+        y_test = np.load(os.path.join(DATA_PATH, "y_test.npy"))
 
-    # Evaluate the model
-    evaluate_model(X_test, y_test)
+        # Convert CNN test data to PyTorch tensors
+        X_test_tensor = torch.FloatTensor(X_test_cnn)  # Shape: [batch_size, 40, sequence_length]
+        y_test_tensor = torch.LongTensor(y_test)
+
+        # Load flattened test data for ML models
+        X_test_flat = np.load(os.path.join(DATA_PATH, "X_test_flat.npy"))
+
+        # Evaluate the models
+        print("\nEvaluating CNN Model...")
+        evaluate_cnn_model(X_test_tensor, y_test_tensor)
+
+        print("\nEvaluating Classic ML Models...")
+        evaluate_ml_models(X_test_flat, y_test)
+
+    except FileNotFoundError as fnf_error:
+        print(f"File not found error: {fnf_error}")
+    except Exception as e:
+        print(f"Unexpected error during evaluation: {e}")

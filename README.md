@@ -9,9 +9,10 @@ Link to the normal audio dataset: https://www.kaggle.com/datasets/omkarmb/datase
 
 The broken audio files are stored on the github repo, under releases.
 
-Then one can proceed with running the model
+Then one can proceed with running the model.
 
-Steps To Run the model:
+I wrote a script "run_pipeline.py" that does all of the steps below:
+
 
 1. Run cleaning_and_sampling.py:
     
@@ -76,68 +77,81 @@ Steps To Run the model:
         y_train.npy (training labels)
         y_test.npy (testing labels)
 
-4. Run train_model.py
+4. Run train_cnn_model.py
     
-    This script trains a 1D Convolutional Neural Network (CNN) to classify audio features.
+    This script trains a 1D Convolutional Neural Network (CNN) to classify audio features extracted from the processed data.
 
     Steps performed in this script:
 
     Load processed training data:
 
-    Reads X_train.npy (features) and y_train.npy (labels) from data/processed_data/.
-    Converts them into PyTorch tensors for training.
-    
+    Loads X_train.npy and y_train.npy from data/processed_data/.
+    Converts the data into PyTorch tensors for training.
+    The feature tensors are shaped as [batch_size, 40, sequence_length].
     Define the CNN model architecture:
 
-    A 1D CNN is used with the following layers:
-    Conv1D layers for feature extraction.
+    The model consists of:
+    Two 1D convolutional layers for feature extraction.
     MaxPooling layers for downsampling.
-    Fully connected (Linear) layers for classification.
-    
+    Fully connected layers for classification.
     Train the model:
 
-    Optimizer: Adam with a learning rate of 0.001.
-    Loss function: Cross-Entropy Loss.
-    Training for 50 epochs.
-    Loss is printed every 10 epochs for monitoring.
-    
+    Uses Adam optimizer with a learning rate of 0.001.
+    Cross-entropy loss function is applied.
+    Trains for 50 epochs with loss displayed every 10 epochs.
     Save the trained model:
 
-    The trained model weights are saved in models/cnn_model.pth using torch.save().
+    Saves the trained model weights to models/cnn_model.pth.
 
-5. Run evaluate_model.py
-    This script evaluates the trained 1D CNN model on the test dataset and provides detailed performance metrics.
+
+5. Run train_ml_models.py:
+
+    This script trains various classic machine learning models to classify audio features.
 
     Steps performed in this script:
 
-    Load the trained model:
+    Load processed training data:
 
-    Loads the saved model weights from models/cnn_model.pth.
-    Sets the model to evaluation mode (model.eval()).
+    Reads X_train_flat.npy and y_train.npy from data/processed_data/.
+    The features are reshaped to [batch_size, feature_vector_size] for ML models.
+    Train classic ML models:
+
+    Trains the following models:
+    Logistic Regression
+    Support Vector Machine (SVM)
+    Decision Tree
+    Random Forest
+    Save the trained models:
+
+    Each trained model is saved in the models/ directory as .pkl files for later evaluation.
+
+6. Run evaluate_model.py
     
+    This script evaluates the performance of both the trained CNN model and the classic ML models on the test dataset.
+
+    Steps performed in this script:
+
     Load test data:
 
-    Reads X_test.npy (features) and y_test.npy (labels) from data/processed_data/.
-    Converts them into PyTorch tensors for evaluation.
-    
-    Evaluate the model:
+    Reads X_test.npy and y_test.npy from data/processed_data/ for CNN evaluation.
+    Reads X_test_flat.npy for ML model evaluation.
+    Converts the CNN test features to PyTorch tensors.
+    Evaluate the CNN model:
 
-    Performs inference on the test dataset without updating model weights.
+    Loads the trained CNN model from models/cnn_model.pth.
+    Performs inference on the test dataset.
     Computes the test accuracy.
-    
-    Generate performance metrics:
+    Generates a classification report with precision, recall, and F1-score.
+    Displays a confusion matrix for visual analysis.
+    Evaluate classic ML models:
 
-    Classification report:
-    
-    Includes precision, recall, and F1-score for "Normal" and "Broken" audio samples.
-    
-    Confusion matrix:
-    
-    Displays the number of correct and incorrect predictions in a matrix format.
-    
-    Visualization:
-    
-    Plots the confusion matrix for better insights into model performance.
+    Loads trained models from the models/ directory.
+    Evaluates Logistic Regression, SVM, Decision Tree, and Random Forest classifiers.
+    Generates accuracy scores, classification reports, and confusion matrices for each model.
+    Handle potential errors:
+
+    Checks for missing model files and handles exceptions gracefully.
+    Provides detailed output in case of any issues during evaluation.
 
 Optional Steps:
     

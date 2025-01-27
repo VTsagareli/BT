@@ -8,6 +8,8 @@ RAW_BROKEN_AUDIO_PATH = "data/broken_audio"
 RAW_NORMAL_AUDIO_PATH = "data/normal_audio"
 CLEANED_BROKEN_AUDIO_PATH = "data/broken_audio_samples"
 CLEANED_NORMAL_AUDIO_PATH = "data/normal_audio_samples"
+PROCESSED_DATA_PATH = "data/processed_data"
+MODELS_PATH = "models"
 
 # Parameters
 SAMPLE_RATE = 22050
@@ -84,9 +86,17 @@ def clean_output_folders(folders):
             print(f"Folder created: {folder}")
 
 def main():
+    # Folders to be cleaned
+    folders_to_clean = [
+        CLEANED_BROKEN_AUDIO_PATH, 
+        CLEANED_NORMAL_AUDIO_PATH, 
+        PROCESSED_DATA_PATH, 
+        MODELS_PATH
+    ]
+
     # Clean output folders
     print("Cleaning output folders...")
-    clean_output_folders([CLEANED_BROKEN_AUDIO_PATH, CLEANED_NORMAL_AUDIO_PATH])
+    clean_output_folders(folders_to_clean)
 
     # Clean and split broken audio
     print("Cleaning and splitting broken audio samples...")
