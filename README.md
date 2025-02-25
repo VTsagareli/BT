@@ -1,164 +1,170 @@
-# BT
-Bachelor Thesis Project - AI Sound Anomaly Detection Model.
+# AI Sound Anomaly Detection Model - Bachelor Thesis Project
 
-Before running the model, one should download broken and normal audio files and place them in the folders, broken_audio and normal_audio respectively.
+This project is part of my Bachelor Thesis at **XU Exponential University of Applied Sciences**. The goal is to develop an **AI-powered anomaly detection system** that classifies vehicle sounds as **normal** or **faulty**, specifically identifying fuel pump issues based on audio analysis.
 
-For normal audio, go on to this link and doenload the normal audio dataset. After that, one should copy/paste about 1500 normal audio samples to the normal_audio folder. 
+## Dataset Preparation - Required Downloads
 
-Link to the normal audio dataset: https://www.kaggle.com/datasets/omkarmb/dataset-open-access-vehicle-interior-sound-dataset
+Before running the pipeline, the necessary datasets must be placed in the appropriate folders.
 
-The broken audio files are stored on the github repo, under releases.
+### 1. Download the Normal Audio Dataset (Vehicle Interior Sounds)
+- **Source**: [Kaggle: Open-Access Vehicle Interior Sound Dataset](https://www.kaggle.com/datasets/omkarmb/dataset-open-access-vehicle-interior-sound-dataset)
+- **Steps**:
+  - Download the dataset from Kaggle.
+  - Extract the files.
+  - **Copy approximately 1500** normal audio samples from the dataset.
+  - Place them in the following directory:
+    ```
+    data/normal_audio_samples/
+    ```
 
-Then one can proceed with running the model.
+### 2. Download the Broken Audio Dataset
+- The dataset of **broken vehicle sounds (faulty fuel pumps)** is available under the **Releases** section of this GitHub repository.
+- **Steps**:
+  - Navigate to the **Releases** section of this repository.
+  - Download the provided broken audio dataset.
+  - Extract and place the files in:
+    ```
+    data/broken_audio_samples/
+    ```
 
-I wrote a script "run_pipeline.py" that does all of the steps below:
+### 3. Download the Unseen Test Data
+This project also includes an **"unseen" dataset** to evaluate how well the model generalizes to new data.
 
+#### Unseen Broken Audio
+- Available under **Releases** on GitHub.
+- Extract and place in: 
+data/unseen_broken_audio_samples/
 
-1. Run cleaning_and_sampling.py:
-    
-    This script processes raw audio data by:
-    
-    Cleaning the audio:
-    Loads audio files from data/broken_audio and data/normal_audio.
-    Skips hidden and corrupted files.
-    Saves cleaned files to data/broken_audio_samples and data/normal_audio_samples.
-    
-    Splitting the audio:
-    Broken audio files are split into 3-second chunks.
-    Normal audio files are cleaned but not split.
-    
-    Clearing old files:
-    Deletes existing processed files in output folders to ensure fresh data.
+#### Unseen Normal Audio
+- The unseen normal audio files must be **manually copied** from the Kaggle dataset used for normal sounds.
+- **Steps**:
+- Select **about 300** samples from the Kaggle dataset.
+- Copy them into:
+  ```
+  data/unseen_normal_audio_samples/
+  ```
 
-2. Run preprocess_audio.py:
-    
-    This script processes cleaned audio data by:
+Once these files are placed correctly, you can proceed with running the model.
 
-    Augmenting the audio:
+---
 
-    Applies various augmentations to broken audio samples, including:
-    Adding noise
-    Reversing the audio
-    Dynamic range compression
-    Time stretching
-    Equalization (EQ)
-    Clipping the audio
-    Scaling the amplitude
-    Inserting silence
-    Frequency masking
+## Running the Pipeline
 
-    Extracting features:
+The entire pipeline is automated using the **`run_pipeline.py`** script, which executes all the steps below.
 
-    Extracts MFCC (Mel-Frequency Cepstral Coefficients) features from both normal and broken audio samples.
-    Ensures consistency by padding or truncating features to a fixed size.
-    
-    Saving processed data:
+### 1. Run `cleaning_and_sampling.py`
+Cleans and prepares raw audio data:
+- Removes **corrupt or hidden** files.
+- Converts files to a standard **WAV format (22,050 Hz)**.
+- Splits broken audio files into **3-second chunks** for consistency.
+- Organizes files into:
+data/broken_audio_samples/ 
+data/normal_audio_samples/ 
+data/unseen_broken_audio_samples/ 
+data/unseen_normal_audio_samples/
 
-    Saves extracted features and labels as .npy files in data/processed_data for model training.
+- Deletes previously processed files to avoid conflicts.
 
-3. Run split_data.py:
-    
-    This script prepares the processed audio data for training by:
+### 2. Run `preprocess_audio.py`
+Extracts features and applies augmentations:
+- **Augmentation (applied to broken audio samples only)**:
+- Background noise addition
+- Reversing audio
+- Dynamic range compression
+- Time stretching
+- Equalization (EQ)
+- Clipping
+- Scaling the amplitude
+- Inserting silence
+- Frequency masking
+- **Feature Extraction**:
+- Extracts **MFCC (Mel-Frequency Cepstral Coefficients)** for ML models.
+- Saves extracted features as `.npy` files for model training.
 
-    Loading processed features and labels:
-
-    Reads the features.npy and labels.npy files generated in the preprocessing step.
-    
-    Splitting the data:
-
-    Divides the dataset into training (80%) and testing (20%) subsets using train_test_split from sklearn.
-    Ensures reproducibility with a fixed random state.
-    
-    Saving the split data:
-
-    Saves the training and test splits to data/processed_data/ as:
-        X_train.npy (training features)
-        X_test.npy (testing features)
-        y_train.npy (training labels)
-        y_test.npy (testing labels)
-
-4. Run train_cnn_model.py
-    
-    This script trains a 1D Convolutional Neural Network (CNN) to classify audio features extracted from the processed data.
-
-    Steps performed in this script:
-
-    Load processed training data:
-
-    Loads X_train.npy and y_train.npy from data/processed_data/.
-    Converts the data into PyTorch tensors for training.
-    The feature tensors are shaped as [batch_size, 40, sequence_length].
-    Define the CNN model architecture:
-
-    The model consists of:
-    Two 1D convolutional layers for feature extraction.
-    MaxPooling layers for downsampling.
-    Fully connected layers for classification.
-    Train the model:
-
-    Uses Adam optimizer with a learning rate of 0.001.
-    Cross-entropy loss function is applied.
-    Trains for 50 epochs with loss displayed every 10 epochs.
-    Save the trained model:
-
-    Saves the trained model weights to models/cnn_model.pth.
+### 3. Run `split_data.py`
+Prepares data for training:
+- Reads **processed features and labels**.
+- **Splits data** into training (80%) and testing (20%).
+- Saves the split data in:
+data/processed_data/
 
 
-5. Run train_ml_models.py:
+### 4. Run `train_cnn_model.py`
+Trains the Convolutional Neural Network (CNN):
+- Loads training data.
+- Defines a **1D CNN model** with convolutional, pooling, and fully connected layers.
+- Applies **dropout and L2 regularization** to prevent overfitting.
+- Uses the **Adam optimizer** and trains for **50 epochs**.
+- Saves the trained model as:
+models/cnn_model.pth
 
-    This script trains various classic machine learning models to classify audio features.
 
-    Steps performed in this script:
+### 5. Run `train_ml_models.py`
+Trains traditional machine learning models:
+- Loads **processed training data**.
+- Trains the following ML models:
+- Logistic Regression
+- Support Vector Machine (SVM)
+- Decision Tree
+- Random Forest
+- Uses **10-fold cross-validation** to improve generalization.
+- Saves trained models in:
+models/
 
-    Load processed training data:
 
-    Reads X_train_flat.npy and y_train.npy from data/processed_data/.
-    The features are reshaped to [batch_size, feature_vector_size] for ML models.
-    Train classic ML models:
+### 6. Run `evaluate_model.py`
+Evaluates the trained models on the test dataset:
+- **CNN Model Evaluation**:
+- Loads the trained CNN model.
+- Computes **accuracy, precision, recall, and F1-score**.
+- Generates a **confusion matrix**.
+- **ML Model Evaluation**:
+- Loads trained ML models.
+- Computes evaluation metrics (same as CNN).
+- Displays performance for comparison.
 
-    Trains the following models:
-    Logistic Regression
-    Support Vector Machine (SVM)
-    Decision Tree
-    Random Forest
-    Save the trained models:
+### 7. Run `evaluate_unseen_data.py` (Optional)
+Tests models on the unseen dataset:
+- Loads previously unseen **normal and broken** audio samples.
+- Extracts features in the same way as training data.
+- **Evaluates** each trained model on unseen data.
+- Generates classification reports and confusion matrices.
 
-    Each trained model is saved in the models/ directory as .pkl files for later evaluation.
+---
 
-6. Run evaluate_model.py
-    
-    This script evaluates the performance of both the trained CNN model and the classic ML models on the test dataset.
+## Additional Utility Scripts
 
-    Steps performed in this script:
+### `run_pipeline.py`
+- Runs **all the scripts** in the correct order, automating the entire workflow.
 
-    Load test data:
+### `count_sample.py`
+- Counts the number of **normal and broken audio samples** after augmentation.
 
-    Reads X_test.npy and y_test.npy from data/processed_data/ for CNN evaluation.
-    Reads X_test_flat.npy for ML model evaluation.
-    Converts the CNN test features to PyTorch tensors.
-    Evaluate the CNN model:
+### `clean_sample_folders.py`
+- **Empties** the following folders:
+data/augmented_broken_audio_samples/ 
+data/broken_audio_samples/ 
+data/normal_audio_samples/ 
+data/unseen_broken_audio_samples/ 
+data/unseen_normal_audio_samples/ 
+data/unseen_augmented_broken_audio_samples/
 
-    Loads the trained CNN model from models/cnn_model.pth.
-    Performs inference on the test dataset.
-    Computes the test accuracy.
-    Generates a classification report with precision, recall, and F1-score.
-    Displays a confusion matrix for visual analysis.
-    Evaluate classic ML models:
+- Helps maintain a clean dataset, especially when preparing for a fresh run.
 
-    Loads trained models from the models/ directory.
-    Evaluates Logistic Regression, SVM, Decision Tree, and Random Forest classifiers.
-    Generates accuracy scores, classification reports, and confusion matrices for each model.
-    Handle potential errors:
+---
 
-    Checks for missing model files and handles exceptions gracefully.
-    Provides detailed output in case of any issues during evaluation.
+## Technology Stack
 
-Optional Steps:
-    
-    count_sample.py:
+The project was implemented using the following technologies:
 
-    Counts the amount of samples at hand. Useful for knowing how many normal and broken audio samples there are after running the augmentaitons.
-    
-    clean_sample_folders.py:
+| **Category** | **Technology** |
+|-------------|--------------|
+| **Programming Language** | Python 3.12 |
+| **Deep Learning Framework** | PyTorch |
+| **Machine Learning Libraries** | Scikit-learn, NumPy |
+| **Audio Processing** | Librosa, SoundFile |
+| **Data Handling** | Pandas, NumPy |
+| **Model Storage** | Joblib, PyTorch `.pth` |
+| **Visualization** | Matplotlib, Seaborn |
 
-    cleans folders augmetned_broken_audio_samples, broken_audio_samples and normal_audio_samples for convenience. It will also clean normal_audio and broken_audio if confirmed; This is useful when I have to make commits, since its not convenient to have the audio data on git.
+This technology stack was chosen for its **efficiency** in handling audio data, **scalability**, and **robust model training capabilities**.
