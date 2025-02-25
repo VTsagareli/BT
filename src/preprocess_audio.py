@@ -2,11 +2,17 @@ import os
 import librosa
 import numpy as np
 import soundfile as sf
+import random
 
 # Paths
 NORMAL_AUDIO_PATH = "data/normal_audio_samples"
 BROKEN_AUDIO_PATH = "data/broken_audio_samples"
 AUGMENTED_AUDIO_PATH = "data/augmented_broken_audio_samples"
+
+UNSEEN_NORMAL_AUDIO_PATH = "data/unseen_normal_audio_samples"
+UNSEEN_BROKEN_AUDIO_PATH = "data/unseen_broken_audio_samples"
+UNSEEN_AUGMENTED_BROKEN_AUDIO_PATH = "data/unseen_augmented_broken_audio_samples"
+
 OUTPUT_PATH = "data/processed_data"
 
 # Parameters
@@ -15,46 +21,28 @@ N_MFCC = 40
 MAX_TIME_STEPS = 100
 
 # Augmentation Functions
-def add_noise(audio, noise_factor=0.010):
+def add_background_noise(audio, noise_factor=0.02):
+    """Adds natural background noise from a noise sample or random noise."""
     noise = np.random.normal(0, 1, len(audio))
     return audio + noise_factor * noise
 
-def reverse_audio(audio):
-    return audio[::-1]
+def apply_reverb(audio, reverb_factor=0.4):
+    """Applies artificial reverberation (simulates room echo)."""
+    return np.convolve(audio, np.hanning(50) * reverb_factor, mode="same")
 
-def dynamic_range_compression(audio, threshold=0.8):
-    return np.tanh(audio * threshold)
+def time_stretch(audio, rate_range=(0.9, 1.1)):
+    """Alters speed slightly without changing pitch."""
+    rate = random.uniform(rate_range[0], rate_range[1])
+    return librosa.effects.time_stretch(audio, rate=rate)
 
-def clip_audio(audio, clipping_factor=0.95):
-    return np.clip(audio, -clipping_factor, clipping_factor)
-
-def scale_amplitude(audio, factor=0.8):
-    return audio * factor
-
-def insert_silence(audio, sr, silence_duration=0.7):
-    silence = np.zeros(int(sr * silence_duration))
-    return np.concatenate((silence, audio, silence))
-
-def apply_eq(audio, lowcut, highcut, sr):
-    fft = np.fft.fft(audio)
-    freqs = np.fft.fftfreq(len(fft), 1 / sr)
-    fft[(freqs < lowcut) | (freqs > highcut)] = 0
-    return np.fft.ifft(fft).real
-
-def frequency_mask(audio, sr, freq_range=(1000, 3000)):
-    fft = np.fft.fft(audio)
-    freqs = np.fft.fftfreq(len(fft), 1 / sr)
-    fft[(freqs > freq_range[0]) & (freqs < freq_range[1])] = 0
-    return np.fft.ifft(fft).real
-
-# RIR-related functions commented out
-# def apply_reverb(audio, rir_audio):
-#     rir_audio = rir_audio / np.sqrt(np.sum(rir_audio ** 2))
-#     return np.convolve(audio, rir_audio, mode="full")[: len(audio)]
+def pitch_shift(audio, sr, pitch_range=(-2, 2)):
+    """Shifts pitch up/down slightly to simulate different environments."""
+    n_steps = random.uniform(pitch_range[0], pitch_range[1]) 
+    return librosa.effects.pitch_shift(audio, sr=sr, n_steps=n_steps)
 
 def augment_audio(file_path, output_path):
     """
-    Applies augmentations to a given audio file and saves the results.
+    Applies **natural** augmentations to a given audio file and saves the results.
     """
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -62,26 +50,13 @@ def augment_audio(file_path, output_path):
     try:
         audio, sr = librosa.load(file_path, sr=SAMPLE_RATE)
 
-        # Augmentations
+        # New Augmentations
         augmentations = {
-            "noisy": add_noise(audio),
-            "reversed": reverse_audio(audio),
-            "compressed": dynamic_range_compression(audio),
-            "sped_up": librosa.effects.time_stretch(audio, rate=1.25),
-            "eq": apply_eq(audio, lowcut=300, highcut=3000, sr=sr),
-            "clipped": clip_audio(audio),
-            "scaled": scale_amplitude(audio, factor=0.8),
-            "silenced": insert_silence(audio, sr),
+            "background_noise": add_background_noise(audio),
+            "reverb": apply_reverb(audio),
+            "time_stretched": time_stretch(audio),
+            "pitch_shifted": pitch_shift(audio, sr),
         }
-
-        # Frequency masking
-        augmentations["freq_masked"] = frequency_mask(audio, sr)
-
-        # RIR augmentation skipped
-        # rir_file = "data/rir_file.wav"
-        # if os.path.exists(rir_file):
-        #     rir_audio, _ = librosa.load(rir_file, sr=SAMPLE_RATE)
-        #     augmentations["reverb"] = apply_reverb(audio, rir_audio)
 
         # Save all augmentations
         for aug_name, aug_audio in augmentations.items():
@@ -93,7 +68,7 @@ def augment_audio(file_path, output_path):
 # Feature Extraction
 def extract_mfcc(audio_file, n_mfcc=N_MFCC, max_time_steps=MAX_TIME_STEPS):
     """
-    Extract MFCC features from an audio file.
+    Extracts MFCC features from an audio file.
     """
     y, sr = librosa.load(audio_file, sr=SAMPLE_RATE)
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
@@ -118,33 +93,45 @@ def save_features_and_labels(output_path=OUTPUT_PATH):
     print("Processing normal audio samples...")
     normal_files = [os.path.join(NORMAL_AUDIO_PATH, f) for f in os.listdir(NORMAL_AUDIO_PATH) if f.endswith(".wav")]
     for file in normal_files:
-        mfcc_features = extract_mfcc(file)
-        X.append(mfcc_features)
-        y.append(0)  # Label: 0 for normal
+        X.append(extract_mfcc(file))
+        y.append(0)  
 
     # Process broken audio samples
     print("Processing broken audio samples...")
     broken_files = [os.path.join(BROKEN_AUDIO_PATH, f) for f in os.listdir(BROKEN_AUDIO_PATH) if f.endswith(".wav")]
     for file in broken_files:
-        mfcc_features = extract_mfcc(file)
-        X.append(mfcc_features)
-        y.append(1)  # Label: 1 for broken
+        X.append(extract_mfcc(file))
+        y.append(1)  
 
     # Process augmented broken audio samples
     print("Processing augmented broken audio samples...")
-    broken_files = [os.path.join(BROKEN_AUDIO_PATH, f) for f in os.listdir(BROKEN_AUDIO_PATH) if f.endswith(".wav")]
-    for file in broken_files:
-        augment_audio(file, AUGMENTED_AUDIO_PATH)
+    for file in os.listdir(AUGMENTED_AUDIO_PATH):
+        if file.endswith(".wav"):
+            X.append(extract_mfcc(os.path.join(AUGMENTED_AUDIO_PATH, file)))
+            y.append(1)  
 
-    augmented_files = [os.path.join(AUGMENTED_AUDIO_PATH, f) for f in os.listdir(AUGMENTED_AUDIO_PATH) if f.endswith(".wav")]
-    for file in augmented_files:
-        mfcc_features = extract_mfcc(file)
-        X.append(mfcc_features)
-        y.append(1)  # Label: 1 for augmented broken
+    # Process unseen normal audio samples
+    print("Processing unseen normal audio samples...")
+    for file in os.listdir(UNSEEN_NORMAL_AUDIO_PATH):
+        if file.endswith(".wav"):
+            X.append(extract_mfcc(os.path.join(UNSEEN_NORMAL_AUDIO_PATH, file)))
+            y.append(0)  
+
+    # Process unseen broken audio samples
+    print("Processing unseen broken audio samples...")
+    for file in os.listdir(UNSEEN_BROKEN_AUDIO_PATH):
+        if file.endswith(".wav"):
+            augment_audio(os.path.join(UNSEEN_BROKEN_AUDIO_PATH, file), UNSEEN_AUGMENTED_BROKEN_AUDIO_PATH)
+
+    # Process unseen augmented broken audio samples
+    print("Processing unseen augmented broken audio samples...")
+    for file in os.listdir(UNSEEN_AUGMENTED_BROKEN_AUDIO_PATH):
+        if file.endswith(".wav"):
+            X.append(extract_mfcc(os.path.join(UNSEEN_AUGMENTED_BROKEN_AUDIO_PATH, file)))
+            y.append(1)  
 
     # Convert to NumPy arrays and save
-    X = np.array(X)
-    y = np.array(y)
+    X, y = np.array(X), np.array(y)
 
     np.save(os.path.join(output_path, "features.npy"), X)
     np.save(os.path.join(output_path, "labels.npy"), y)

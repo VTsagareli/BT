@@ -7,7 +7,12 @@ DEFAULT_FOLDERS = [
     "data/normal_audio_samples",
     "data/augmented_broken_audio_samples",
     "data/processed_data",
-    "models"
+    "models",
+    "data/unseen_broken_audio_samples",
+    "data/unseen_normal_audio_samples",
+    "data/unseen_augmented_broken_audio_samples",
+    "data/unseen_broken_audio",
+    "data/unseen_normal_audio"
 ]
 
 # Directories that require user confirmation

@@ -4,7 +4,10 @@ import os
 directories = {
     "broken_audio_samples": "data/broken_audio_samples/",
     "augmented_broken_audio_samples": "data/augmented_broken_audio_samples/",
-    "normal_audio_samples": "data/normal_audio_samples/"
+    "normal_audio_samples": "data/normal_audio_samples/",
+    "unseen_broken_audio_samples": "data/unseen_broken_audio_samples/",
+    "unseen_augmented_broken_audio_samples": "data/unseen_augmented_broken_audio_samples/",
+    "unseen_normal_audio_samples": "data/unseen_normal_audio_samples/"
 }
 
 # Count files in each directory
