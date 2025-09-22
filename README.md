@@ -1,170 +1,150 @@
-# AI Sound Anomaly Detection Model - Bachelor Thesis Project
+# Fuel-Pump Sound Anomaly Detection (Audio + ML / 1D-CNN) - Bachelor Thesis Project
 
-This project is part of my Bachelor Thesis at **XU Exponential University of Applied Sciences**. The goal is to develop an **AI-powered anomaly detection system** that classifies vehicle sounds as **normal** or **faulty**, specifically identifying fuel pump issues based on audio analysis.
-
-## Dataset Preparation - Required Downloads
-
-Before running the pipeline, the necessary datasets must be placed in the appropriate folders.
-
-### 1. Download the Normal Audio Dataset (Vehicle Interior Sounds)
-- **Source**: [Kaggle: Open-Access Vehicle Interior Sound Dataset](https://www.kaggle.com/datasets/omkarmb/dataset-open-access-vehicle-interior-sound-dataset)
-- **Steps**:
-  - Download the dataset from Kaggle.
-  - Extract the files.
-  - **Copy approximately 1500** normal audio samples from the dataset.
-  - Place them in the following directory:
-    ```
-    data/normal_audio_samples/
-    ```
-
-### 2. Download the Broken Audio Dataset
-- The dataset of **broken vehicle sounds (faulty fuel pumps)** is available under the **Releases** section of this GitHub repository.
-- **Steps**:
-  - Navigate to the **Releases** section of this repository.
-  - Download the provided broken audio dataset.
-  - Extract and place the files in:
-    ```
-    data/broken_audio_samples/
-    ```
-
-### 3. Download the Unseen Test Data
-This project also includes an **"unseen" dataset** to evaluate how well the model generalizes to new data.
-
-#### Unseen Broken Audio
-- Available under **Releases** on GitHub.
-- Extract and place in: 
-data/unseen_broken_audio_samples/
-
-#### Unseen Normal Audio
-- The unseen normal audio files must be **manually copied** from the Kaggle dataset used for normal sounds.
-- **Steps**:
-- Select **about 300** samples from the Kaggle dataset.
-- Copy them into:
-  ```
-  data/unseen_normal_audio_samples/
-  ```
-
-Once these files are placed correctly, you can proceed with running the model.
+> Detecting **broken vs. normal** vehicle behavior from short interior audio clips using classical ML on MFCC features and a lightweight **1D-CNN**. Built for early, non-invasive fault awareness and as a foundation for predictive maintenance.
 
 ---
 
-## Running the Pipeline
+## 📌 TL;DR
 
-The entire pipeline is automated using the **`run_pipeline.py`** script, which executes all the steps below.
-
-### 1. Run `cleaning_and_sampling.py`
-Cleans and prepares raw audio data:
-- Removes **corrupt or hidden** files.
-- Converts files to a standard **WAV format (22,050 Hz)**.
-- Splits broken audio files into **3-second chunks** for consistency.
-- Organizes files into:
-data/broken_audio_samples/ 
-data/normal_audio_samples/ 
-data/unseen_broken_audio_samples/ 
-data/unseen_normal_audio_samples/
-
-- Deletes previously processed files to avoid conflicts.
-
-### 2. Run `preprocess_audio.py`
-Extracts features and applies augmentations:
-- **Augmentation (applied to broken audio samples only)**:
-- Background noise addition
-- Reversing audio
-- Dynamic range compression
-- Time stretching
-- Equalization (EQ)
-- Clipping
-- Scaling the amplitude
-- Inserting silence
-- Frequency masking
-- **Feature Extraction**:
-- Extracts **MFCC (Mel-Frequency Cepstral Coefficients)** for ML models.
-- Saves extracted features as `.npy` files for model training.
-
-### 3. Run `split_data.py`
-Prepares data for training:
-- Reads **processed features and labels**.
-- **Splits data** into training (80%) and testing (20%).
-- Saves the split data in:
-data/processed_data/
-
-
-### 4. Run `train_cnn_model.py`
-Trains the Convolutional Neural Network (CNN):
-- Loads training data.
-- Defines a **1D CNN model** with convolutional, pooling, and fully connected layers.
-- Applies **dropout and L2 regularization** to prevent overfitting.
-- Uses the **Adam optimizer** and trains for **50 epochs**.
-- Saves the trained model as:
-models/cnn_model.pth
-
-
-### 5. Run `train_ml_models.py`
-Trains traditional machine learning models:
-- Loads **processed training data**.
-- Trains the following ML models:
-- Logistic Regression
-- Support Vector Machine (SVM)
-- Decision Tree
-- Random Forest
-- Uses **10-fold cross-validation** to improve generalization.
-- Saves trained models in:
-models/
-
-
-### 6. Run `evaluate_model.py`
-Evaluates the trained models on the test dataset:
-- **CNN Model Evaluation**:
-- Loads the trained CNN model.
-- Computes **accuracy, precision, recall, and F1-score**.
-- Generates a **confusion matrix**.
-- **ML Model Evaluation**:
-- Loads trained ML models.
-- Computes evaluation metrics (same as CNN).
-- Displays performance for comparison.
-
-### 7. Run `evaluate_unseen_data.py` (Optional)
-Tests models on the unseen dataset:
-- Loads previously unseen **normal and broken** audio samples.
-- Extracts features in the same way as training data.
-- **Evaluates** each trained model on unseen data.
-- Generates classification reports and confusion matrices.
+- **Goal:** Binary classify 3-second interior car audio as **Normal** or **Broken (fuel-pump buzz)**  
+- **Data:**  
+  - **Normal:** ~1,500 clips sampled from a 5k+ open-access interior-sound dataset (Kaggle)  
+  - **Broken:** ~400 clips curated via multilingual web search (EN/DE/RU/KA), **augmented** to ~1,500  
+- **Stack:** Python, Librosa, scikit-learn, PyTorch, NumPy, SoundFile, Pandas, Matplotlib, Seaborn
+- **Note:** Both ML and CNN showed signs of **overfitting** (see Limitations).
 
 ---
 
-## Additional Utility Scripts
+## 🧭 Table of Contents
 
-### `run_pipeline.py`
-- Runs **all the scripts** in the correct order, automating the entire workflow.
-
-### `count_sample.py`
-- Counts the number of **normal and broken audio samples** after augmentation.
-
-### `clean_sample_folders.py`
-- **Empties** the following folders:
-data/augmented_broken_audio_samples/ 
-data/broken_audio_samples/ 
-data/normal_audio_samples/ 
-data/unseen_broken_audio_samples/ 
-data/unseen_normal_audio_samples/ 
-data/unseen_augmented_broken_audio_samples/
-
-- Helps maintain a clean dataset, especially when preparing for a fresh run.
+- [Why this matters](#why-this-matters)  
+- [Project scope](#project-scope)  
+- [Data sources](#data-sources)  
+- [Methodology](#methodology)  
+- [Models](#models)  
+- [Design decisions & trade-offs](#design-decisions--trade-offs)  
+- [Limitations](#limitations)  
+- [Future work](#future-work)  
+- [FAQ](#faq)  
+- [Cite & license](#cite--license)  
 
 ---
 
-## Technology Stack
+## Why this matters
 
-The project was implemented using the following technologies:
+Interior audio provides a **non-invasive** diagnostic signal. Detecting a characteristic **fuel-pump buzzing** pattern from short clips can help:
 
-| **Category** | **Technology** |
-|-------------|--------------|
-| **Programming Language** | Python 3.12 |
-| **Deep Learning Framework** | PyTorch |
-| **Machine Learning Libraries** | Scikit-learn, NumPy |
-| **Audio Processing** | Librosa, SoundFile |
-| **Data Handling** | Pandas, NumPy |
-| **Model Storage** | Joblib, PyTorch `.pth` |
-| **Visualization** | Matplotlib, Seaborn |
+- Give **drivers** early warnings before costly failures  
+- Help **shops/fleets** triage faster  
+- Inform **product** ideas for embedded/mobile diagnostics
 
-This technology stack was chosen for its **efficiency** in handling audio data, **scalability**, and **robust model training capabilities**.
+---
+
+## Project scope
+
+- **Task:** Binary classification — `normal` vs `broken`  
+- **Unit of analysis:** 3-second interior audio segments  
+- **Focus:** Fuel-pump related buzzing in the **broken** class  
+- **Out of scope:** Root-cause identification, real-time streaming, multi-fault taxonomy
+
+---
+
+## Data sources
+
+- **Normal audio:**  
+  Kaggle — *Open-Access Vehicle Interior Sound Dataset*  
+  https://www.kaggle.com/datasets/omkarmb/dataset-open-access-vehicle-interior-sound-dataset
+
+- **Broken audio (fuel-pump buzz):**  
+  Curated from web audio/video via multilingual search (**EN/DE/RU/KA**), standardized to **3-second** segments.
+
+> 🔧 **Augmentations (mainly for Broken):** noise injection, pitch shift, time-stretch, mild reverb/room impulse, EQ, and light frequency masking — to increase diversity and improve generalization.
+
+- **After processing:**  
+  - Normal: **~1,500** clips (down-sampled from 5k+)  
+  - Broken: **~1,500** clips (≈400 originals + augmentation)
+
+---
+
+## Methodology
+
+1) **Standardize & segment**  
+Convert all audio to a common format (e.g., WAV, 22,050 Hz, mono). Slice to **3 s** windows.
+
+2) **Feature prep**  
+Compute **MFCCs** (e.g., 40 coefficients) with Librosa; normalize features for ML/CNN pipelines.
+
+3) **Split strategy**  
+Stratified train/test split and a separate **unseen holdout** from different sources to check robustness.
+
+4) **Train**  
+- ML baselines with scikit-learn  
+- A simple **1D-CNN** with PyTorch on MFCC sequences
+
+5) **Evaluate**  
+Accuracy, Precision, Recall, F1, Confusion Matrix. Compare **Test** vs **Unseen** performance.
+
+---
+
+## Models
+
+### Classical ML (MFCC features)
+- Logistic Regression, SVM, Decision Tree, Random Forest  
+- Grid/heuristic tuning on key hyperparameters
+
+### 1D-CNN (PyTorch) on MFCC sequences — high level
+- Operates directly on **MFCC time series**  
+- Small stack of **convolutions + pooling + dropout**, then a **fully-connected** output layer  
+- Trained with **Adam**, cross-entropy loss, and basic regularization (dropout, weight decay, early stopping)
+
+> Intention: keep the network lightweight and readable while capturing temporal patterns in the buzzing.
+
+---
+
+## Design decisions & trade-offs
+
+- **3-second windows** to align with the Kaggle dataset and keep batches consistent  
+- **MFCCs** for compact, robust features on small datasets (used by both ML and CNN)  
+- **Lightweight 1D-CNN** to capture temporal patterns without heavy compute  
+- **Targeted augmentation** for the scarce **broken** class to reduce imbalance
+
+---
+
+## Limitations
+
+- **Validation setup:** Ensure a true **train/validation/test** split for the CNN (avoid using train data as validation)  
+- **Overfitting risk:** Broken samples rely heavily on augmentation; more real-world diversity is needed  
+- **Binary focus:** Flags “broken vs normal,” not specific component types  
+- **Recording variance:** Performance can vary with devices, mic placement, and cabin noise
+
+---
+
+## Future work
+
+- **Data:** Collect more genuine broken samples across car models, devices, environments  
+- **Modeling:** Proper DataLoaders; early stopping on a real validation set; try CRNN/Transformers or transfer learning; threshold tuning  
+- **Evaluation:** Robustness at different SNRs and devices; clearer cost-of-errors framing (FP vs FN)  
+- **Productization:** On-device/mobile inference; real-time streaming with sliding windows; simple explainability (saliency over time)
+
+---
+
+## FAQ
+
+**What is the “broken” class?**  
+Fuel-pump buzzing patterns indicative of failure.
+
+**Does the model localize the fault in time?**  
+Currently **clip-level** classification. Segment scoring is a possible extension.
+
+**Can I run this on my own recordings?**  
+Yes — place 3-second WAV clips in `data/unseen/` and run the unseen evaluation script.
+
+---
+
+## Cite & license
+
+- **Normal audio dataset:**  
+  Kaggle — *Open-Access Vehicle Interior Sound Dataset*  
+  https://www.kaggle.com/datasets/omkarmb/dataset-open-access-vehicle-interior-sound-dataset
+
+---
